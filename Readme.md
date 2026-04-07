@@ -1,112 +1,127 @@
-# 🎙️ LiveKit Voice-to-Workflow (n8n Specialist)
+# AI Voice Assistant — Product Q&A
 
-An AI-powered voice assistant that listens to user requests, designs automation workflows, and creates them directly in **n8n** using a consultative approach.
+A real-time AI voice assistant that answers questions about your products and services. Speak naturally — it listens, responds, and shows a live transcript with a 3D animated orb that reacts to the conversation.
 
-This project combines **LiveKit voice agents**, **LLM reasoning**, and **n8n API automation** to turn spoken ideas into fully functional workflows.
-
----
-
-## 🚀 Features
-
-* 🎤 Voice-based interaction using LiveKit
-* 🧠 AI-powered workflow design (LLM-driven)
-* 🔄 Automatic n8n workflow creation via API
-* ❓ Interactive clarification before execution
-* 🧩 Modular architecture (frontend + backend)
+Built with **LiveKit** (Docker), **OpenAI** (Whisper STT + GPT-4o-mini + TTS), and **React + Framer Motion**.
 
 ---
 
-## 🏗️ Project Structure
+## Features
+
+- **Voice Q&A** — ask questions out loud, get spoken answers instantly
+- **Live Transcript** — real-time display of everything said by you and the assistant
+- **3D Animated Orb** — pulses and emits rings when speaking, breathes when listening
+- **Knowledge Base** — edit a single text file to customize the agent's answers
+- **Interruption support** — speak over the agent at any time
+
+---
+
+## Project Structure
 
 ```
-├── frontend/               # Vite + React frontend
-│   ├── src/
-│   ├── public/
-│   └── dist/
+├── backend/
+│   ├── agent.py            # LiveKit voice agent (STT → LLM → TTS)
+│   ├── knowledge_base.txt  # Edit this with your product/service info
+│   ├── requirements.txt    # Python dependencies
+│   ├── .env                # API keys and LiveKit config
+│   └── livekit.yaml        # LiveKit server config reference
 │
-├── backend/               # Python voice agent + n8n tools
-│   ├── agent.py           # LiveKit voice agent logic
-│   ├── n8n_tools.py       # n8n workflow creation utilities
-│   ├── requirements.txt
-│   └── .env.example
+└── frontend/
+    └── src/
+        ├── App.jsx         # UI: 3D orb + live transcript + connect screen
+        └── index.css       # Dark glassmorphic theme + 3D orb styles
 ```
 
 ---
 
-## ⚙️ How It Works
+## Setup
 
-1. User speaks a workflow idea
-2. Voice agent:
-
-   * Listens to intent
-   * Asks clarifying questions
-   * Drafts workflow architecture
-3. Upon approval:
-
-   * Converts logic into n8n JSON
-   * Calls `create_workflow` tool
-   * Pushes workflow to n8n instance
+### Prerequisites
+- Docker (for LiveKit server)
+- Python 3.11+
+- Node.js 18+
+- OpenAI API key
 
 ---
 
-## 🧠 Agent Behavior
+### Step 1 — Start LiveKit Server (Docker)
 
-The AI agent follows a strict consultative workflow:
+Pull the LiveKit images:
 
-1. **Listen** → Understand user intent
-2. **Clarify** → Ask about triggers, actions, credentials
-3. **Draft** → Propose workflow structure
-4. **Execute** → Create workflow only after approval
+```bash
+docker pull livekit/generate
+docker pull livekit/livekit-server
+```
+
+Start the LiveKit server in dev mode (exposes ports for WebSocket, TCP, and UDP):
+
+```bash
+docker run --rm \
+  -p 7880:7880 \
+  -p 7881:7881 \
+  -p 7882:7882/udp \
+  livekit/livekit-server \
+  --dev --bind 0.0.0.0
+```
+
+> The server runs in dev mode with credentials `devkey` / `secret`. Keep this terminal open — it must stay running while you use the app.
 
 ---
 
-## 🛠️ Backend Setup
+### Step 2 — Generate a Room Access Token
 
-### 1. Install Dependencies
+Install the LiveKit CLI if you don't have it:
+
+```bash
+brew install livekit-cli
+```
+
+Generate a token (valid for 24 hours):
+
+```bash
+livekit-cli create-token \
+  --api-key devkey \
+  --api-secret secret \
+  --join \
+  --room n8n-room \
+  --identity user \
+  --valid-for 24h
+```
+
+Copy the printed token — you'll paste it into the frontend connect screen.
+
+---
+
+### Step 3 — Backend (Voice Agent)
 
 ```bash
 cd backend
+python -m venv myenv && source myenv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2. Configure Environment
+Configure `backend/.env`:
 
-Copy `.env.example`:
+```env
+LIVEKIT_URL=ws://127.0.0.1:7880
+LIVEKIT_API_KEY=devkey
+LIVEKIT_API_SECRET=secret
+OPENAI_API_KEY=sk-...
+```
+
+Edit `backend/knowledge_base.txt` with your product/service information.
+
+Start the voice agent:
 
 ```bash
-cp .env.example .env
+python agent.py dev
 ```
 
-Update values:
-
-```env
-LIVEKIT_URL=
-LIVEKIT_API_KEY=
-LIVEKIT_API_SECRET=
-
-OPENAI_API_KEY=
-
-N8N_BASE_URL=
-N8N_API_KEY=
-```
-
-(Optional) Use Ollama:
-
-```env
-USE_OLLAMA=true
-```
+The agent connects to LiveKit and waits for a user to join the room.
 
 ---
 
-### 3. Run Voice Agent
-
-```bash
-python agent.py
-```
-
----
-
-## 🌐 Frontend Setup
+### Step 4 — Frontend
 
 ```bash
 cd frontend
@@ -114,84 +129,37 @@ npm install
 npm run dev
 ```
 
-Build for production:
+Open `http://localhost:5173` in your browser, then:
+1. Enter LiveKit Server URL: `ws://127.0.0.1:7880`
+2. Paste the access token from Step 2
+3. Click **Start Conversation** and allow microphone access
 
-```bash
-npm run build
+---
+
+## Running Order (every session)
+
+```
+1. docker run ... livekit/livekit-server --dev --bind 0.0.0.0   ← LiveKit server
+2. python agent.py dev                                           ← Voice agent
+3. npm run dev  (in frontend/)                                   ← UI
 ```
 
 ---
 
-## 🔌 n8n Integration
+## Customizing the Knowledge Base
 
-The backend includes utility functions:
-
-* `create_workflow` → Sends workflow JSON to n8n
-* `research_n8n_node` → Helps AI understand node capabilities
-
-Ensure your n8n instance:
-
-* Is running
-* Has API access enabled
-* Accepts authenticated requests
+Open `backend/knowledge_base.txt` and replace the sample content with your own product/service information — pricing, FAQs, support details, etc. The agent reads this file on every startup.
 
 ---
 
-## 📦 Tech Stack
+## Tech Stack
 
-* **Frontend:** React + Vite
-* **Backend:** Python
-* **Voice:** LiveKit Agents
-* **LLM:** OpenAI / Ollama
-* **Automation:** n8n
-
----
-
-## 🧪 Example Use Case
-
-> “Create a workflow that sends me a Slack message when I receive a new email.”
-
-The agent will:
-
-1. Ask for email provider details
-2. Ask for Slack credentials
-3. Draft nodes:
-
-   * Email Trigger
-   * Slack Node
-4. Create workflow in n8n after approval
-
----
-
-## ⚠️ Notes
-
-* Workflow is only created after explicit user confirmation
-* Agent maintains conversational context
-* Designed for iterative refinement
-
----
-
-## 📌 Future Improvements
-
-* UI for workflow visualization
-* Workflow editing via voice
-* Multi-language support
-* Error handling & retry logic
-
----
-
-## 🤝 Contributing
-
-Feel free to fork the project and submit PRs for improvements.
-
----
-
-## 📄 License
-
-MIT License
-
----
-
-## 👤 Author
-
-Vignesh Nagarajan - AI Engineer
+| Layer      | Technology                       |
+|------------|----------------------------------|
+| Voice      | LiveKit (Docker, WebRTC)         |
+| STT        | OpenAI Whisper                   |
+| LLM        | OpenAI GPT-4o-mini               |
+| TTS        | OpenAI TTS                       |
+| VAD        | Silero VAD                       |
+| Frontend   | React 19 + Vite + Framer Motion  |
+| Styling    | CSS glassmorphism + 3D orb       |

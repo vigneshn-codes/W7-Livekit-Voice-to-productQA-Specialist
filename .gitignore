@@ -1,0 +1,26 @@
+# Virtual environment
+.venv/
+myenv/
+backend/myenv/
+frontend/node_modules/
+
+backend/myenv/
+frontend/node_modules/
+
+frontend/package-lock.json
+backend/.env
+
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
