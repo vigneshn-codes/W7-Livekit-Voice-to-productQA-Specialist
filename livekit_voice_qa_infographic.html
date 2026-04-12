@@ -1,0 +1,824 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #0d0d14;
+  color: #e8e6ff;
+  font-family: 'Caveat', cursive;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+.canvas {
+  width: 100%;
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 28px 20px 36px;
+  position: relative;
+}
+
+/* ── HEADER ── */
+.header {
+  text-align: center;
+  margin-bottom: 32px;
+  position: relative;
+}
+
+.badge {
+  display: inline-block;
+  background: rgba(130,100,255,0.18);
+  border: 1.5px solid rgba(130,100,255,0.5);
+  border-radius: 20px;
+  padding: 4px 16px;
+  font-size: 14px;
+  color: #b49bff;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+  animation: fadeSlideDown 0.6s ease both;
+}
+
+.title {
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.15;
+  animation: fadeSlideDown 0.7s ease 0.1s both;
+}
+
+.title span { color: #7c5cfc; }
+
+.subtitle {
+  font-size: 17px;
+  color: #9b98c4;
+  margin-top: 6px;
+  animation: fadeSlideDown 0.7s ease 0.2s both;
+}
+
+/* ── SKETCH UNDERLINE ── */
+.sketch-line {
+  width: 180px;
+  height: 8px;
+  margin: 6px auto 0;
+  animation: drawLine 1s ease 0.5s both;
+}
+
+/* ── MAIN PIPELINE ── */
+.pipeline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin: 30px 0 28px;
+  flex-wrap: nowrap;
+  position: relative;
+}
+
+.node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.node-icon {
+  width: 62px;
+  height: 62px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.node-icon:hover { transform: scale(1.1) rotate(-3deg); }
+
+.node-label {
+  font-size: 13px;
+  text-align: center;
+  color: #c8c5e8;
+  max-width: 72px;
+  line-height: 1.2;
+}
+
+/* Node colors */
+.n-mic   { background: rgba(124,92,252,0.25); border: 2px dashed #7c5cfc; }
+.n-lk    { background: rgba(56,189,248,0.15); border: 2px dashed #38bdf8; }
+.n-stt   { background: rgba(251,146,60,0.18); border: 2px dashed #fb923c; }
+.n-llm   { background: rgba(52,211,153,0.18); border: 2px dashed #34d399; }
+.n-tts   { background: rgba(248,113,113,0.18); border: 2px dashed #f87171; }
+.n-ui    { background: rgba(250,204,21,0.15); border: 2px dashed #facc15; }
+
+/* ── ARROWS BETWEEN NODES ── */
+.arrow-wrap {
+  display: flex;
+  align-items: center;
+  margin-top: -22px;
+  flex: 0 0 auto;
+}
+
+.arrow-svg { width: 38px; height: 20px; }
+
+/* ── ORB SECTION ── */
+.orb-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  margin: 28px 0;
+  flex-wrap: wrap;
+}
+
+.orb-wrap {
+  position: relative;
+  width: 130px;
+  height: 130px;
+  flex: 0 0 130px;
+}
+
+.orb-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1.5px solid rgba(124,92,252,0.35);
+  animation: orbPulse 2.4s ease-in-out infinite;
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+}
+
+.orb-ring:nth-child(1) { width: 90px;  height: 90px;  animation-delay: 0s; }
+.orb-ring:nth-child(2) { width: 110px; height: 110px; animation-delay: 0.5s; }
+.orb-ring:nth-child(3) { width: 130px; height: 130px; animation-delay: 1s; }
+
+.orb-core {
+  position: absolute;
+  width: 62px; height: 62px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 35%, #9e7bff, #5030cc 70%, #2a1880);
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  box-shadow: 0 0 28px rgba(124,92,252,0.7), 0 0 60px rgba(124,92,252,0.3);
+  animation: orbBreath 2.4s ease-in-out infinite;
+}
+
+.orb-info {
+  flex: 1;
+  min-width: 180px;
+}
+
+.orb-feature {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  animation: fadeSlideRight 0.5s ease both;
+}
+
+.feat-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex: 0 0 10px;
+}
+
+.feat-text { font-size: 15px; color: #d0cdf0; }
+
+/* ── AUDIO WAVE ── */
+.wave-section {
+  text-align: center;
+  margin: 18px 0;
+}
+
+.wave-label {
+  font-size: 14px;
+  color: #7c78a8;
+  margin-bottom: 8px;
+}
+
+.wave-svg { width: 100%; max-width: 500px; height: 56px; }
+
+/* ── TECH STACK ── */
+.stack-title {
+  text-align: center;
+  font-size: 20px;
+  color: #b49bff;
+  margin: 24px 0 14px;
+  animation: fadeSlideDown 0.6s ease 0.3s both;
+}
+
+.stack-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.stack-card {
+  background: rgba(255,255,255,0.04);
+  border: 1.5px dashed rgba(255,255,255,0.12);
+  border-radius: 12px;
+  padding: 12px 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.stack-card:hover {
+  background: rgba(124,92,252,0.12);
+  border-color: rgba(124,92,252,0.5);
+  transform: translateY(-2px);
+}
+
+.stack-card::before {
+  content: '';
+  position: absolute;
+  top: -40px; left: -40px;
+  width: 80px; height: 80px;
+  background: radial-gradient(circle, rgba(124,92,252,0.15) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.stack-card:hover::before { opacity: 1; }
+
+.sc-icon { font-size: 22px; }
+.sc-name { font-size: 14px; font-weight: 700; color: #e0deff; margin-top: 3px; }
+.sc-role { font-size: 11px; color: #7c78a8; }
+
+/* ── FLOW DIAGRAM ── */
+.flow-title {
+  text-align: center;
+  font-size: 20px;
+  color: #b49bff;
+  margin: 10px 0 14px;
+}
+
+.flow-svg-wrap {
+  width: 100%;
+  overflow: visible;
+}
+
+/* ── FOOTER ── */
+.footer {
+  text-align: center;
+  margin-top: 28px;
+  padding-top: 18px;
+  border-top: 1.5px dashed rgba(255,255,255,0.08);
+}
+
+.footer-text { font-size: 14px; color: #605e80; }
+.footer-name { color: #7c5cfc; font-weight: 700; font-size: 16px; }
+
+.tag-row {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.tag {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  padding: 3px 12px;
+  font-size: 12px;
+  color: #9b98c4;
+}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeSlideDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeSlideRight {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes orbPulse {
+  0%,100% { opacity: 0.25; transform: translate(-50%,-50%) scale(1); }
+  50%      { opacity: 0.7;  transform: translate(-50%,-50%) scale(1.1); }
+}
+@keyframes orbBreath {
+  0%,100% { transform: translate(-50%,-50%) scale(1);    box-shadow: 0 0 28px rgba(124,92,252,0.7), 0 0 60px rgba(124,92,252,0.3); }
+  50%      { transform: translate(-50%,-50%) scale(1.07); box-shadow: 0 0 42px rgba(124,92,252,0.9), 0 0 90px rgba(124,92,252,0.4); }
+}
+@keyframes waveAnim {
+  0%   { d: path("M0,28 C40,8 80,48 120,28 C160,8 200,48 240,28 C280,8 320,48 360,28 C400,8 440,48 480,28 C520,8 500,48 500,28"); }
+  50%  { d: path("M0,28 C40,48 80,8 120,28 C160,48 200,8 240,28 C280,48 320,8 360,28 C400,48 440,8 480,28 C520,48 500,8 500,28"); }
+  100% { d: path("M0,28 C40,8 80,48 120,28 C160,8 200,48 240,28 C280,8 320,48 360,28 C400,8 440,48 480,28 C520,8 500,48 500,28"); }
+}
+@keyframes drawLine {
+  from { stroke-dashoffset: 300; opacity: 0; }
+  to   { stroke-dashoffset: 0;   opacity: 1; }
+}
+@keyframes nodeEntry {
+  from { opacity: 0; transform: scale(0.6) translateY(10px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes arrowDash {
+  from { stroke-dashoffset: 40; }
+  to   { stroke-dashoffset: 0; }
+}
+@keyframes cardEntry {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes speaking {
+  0%,100% { rx: 4; }
+  50% { rx: 10; }
+}
+
+/* Stagger node entries */
+.node:nth-child(1)  { animation: nodeEntry 0.5s ease 0.3s both; }
+.node:nth-child(3)  { animation: nodeEntry 0.5s ease 0.45s both; }
+.node:nth-child(5)  { animation: nodeEntry 0.5s ease 0.6s both; }
+.node:nth-child(7)  { animation: nodeEntry 0.5s ease 0.75s both; }
+.node:nth-child(9)  { animation: nodeEntry 0.5s ease 0.9s both; }
+.node:nth-child(11) { animation: nodeEntry 0.5s ease 1.05s both; }
+
+/* Stack card stagger */
+.stack-card:nth-child(1) { animation: cardEntry 0.5s ease 0.5s both; }
+.stack-card:nth-child(2) { animation: cardEntry 0.5s ease 0.6s both; }
+.stack-card:nth-child(3) { animation: cardEntry 0.5s ease 0.7s both; }
+.stack-card:nth-child(4) { animation: cardEntry 0.5s ease 0.8s both; }
+.stack-card:nth-child(5) { animation: cardEntry 0.5s ease 0.9s both; }
+.stack-card:nth-child(6) { animation: cardEntry 0.5s ease 1.0s both; }
+
+/* Orb features stagger */
+.orb-feature:nth-child(1) { animation-delay: 0.8s; }
+.orb-feature:nth-child(2) { animation-delay: 1.0s; }
+.orb-feature:nth-child(3) { animation-delay: 1.2s; }
+.orb-feature:nth-child(4) { animation-delay: 1.4s; }
+
+/* Transcript ticker */
+.transcript-box {
+  background: rgba(255,255,255,0.04);
+  border: 1.5px dashed rgba(124,92,252,0.3);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin: 16px 0;
+  position: relative;
+  overflow: hidden;
+  min-height: 68px;
+}
+
+.transcript-label {
+  font-size: 12px;
+  color: #7c78a8;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.live-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #f87171;
+  animation: livePulse 1.2s ease-in-out infinite;
+}
+
+@keyframes livePulse {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+
+.transcript-line {
+  font-size: 16px;
+  color: #d8d6f5;
+  min-height: 22px;
+}
+
+.cursor {
+  display: inline-block;
+  width: 2px; height: 18px;
+  background: #7c5cfc;
+  margin-left: 2px;
+  vertical-align: middle;
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.section-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 22px 0 16px;
+}
+
+.divider-line {
+  flex: 1;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, rgba(124,92,252,0.3), transparent);
+}
+
+.divider-text {
+  font-size: 13px;
+  color: #7c78a8;
+  white-space: nowrap;
+}
+
+/* Wave bars */
+.wave-bars {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 48px;
+  margin: 12px 0;
+}
+
+.bar {
+  width: 5px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #9e7bff, #5030cc);
+  animation: barWave 1.2s ease-in-out infinite;
+}
+
+.bar:nth-child(1)  { height: 14px; animation-delay: 0.0s; }
+.bar:nth-child(2)  { height: 28px; animation-delay: 0.1s; }
+.bar:nth-child(3)  { height: 38px; animation-delay: 0.2s; }
+.bar:nth-child(4)  { height: 22px; animation-delay: 0.3s; }
+.bar:nth-child(5)  { height: 44px; animation-delay: 0.4s; }
+.bar:nth-child(6)  { height: 30px; animation-delay: 0.5s; }
+.bar:nth-child(7)  { height: 48px; animation-delay: 0.6s; }
+.bar:nth-child(8)  { height: 26px; animation-delay: 0.7s; }
+.bar:nth-child(9)  { height: 40px; animation-delay: 0.8s; }
+.bar:nth-child(10) { height: 18px; animation-delay: 0.9s; }
+.bar:nth-child(11) { height: 34px; animation-delay: 1.0s; }
+.bar:nth-child(12) { height: 24px; animation-delay: 1.1s; }
+.bar:nth-child(13) { height: 44px; animation-delay: 0.6s; }
+.bar:nth-child(14) { height: 32px; animation-delay: 0.5s; }
+.bar:nth-child(15) { height: 16px; animation-delay: 0.4s; }
+.bar:nth-child(16) { height: 38px; animation-delay: 0.3s; }
+.bar:nth-child(17) { height: 22px; animation-delay: 0.2s; }
+.bar:nth-child(18) { height: 46px; animation-delay: 0.1s; }
+.bar:nth-child(19) { height: 28px; animation-delay: 0.0s; }
+.bar:nth-child(20) { height: 14px; animation-delay: 0.1s; }
+
+@keyframes barWave {
+  0%,100% { transform: scaleY(0.5); opacity: 0.6; }
+  50%      { transform: scaleY(1);   opacity: 1; }
+}
+
+/* ── INTERRUPTION BADGE ── */
+.interrupt-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(248,113,113,0.15);
+  border: 1px dashed rgba(248,113,113,0.5);
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: 13px;
+  color: #f87171;
+  margin: 8px 4px;
+}
+
+.badges-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin: 8px 0 18px;
+}
+
+.feat-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: 13px;
+}
+
+.fb-purple { background: rgba(124,92,252,0.15); border: 1px dashed rgba(124,92,252,0.5); color: #b49bff; }
+.fb-blue   { background: rgba(56,189,248,0.12); border: 1px dashed rgba(56,189,248,0.45); color: #7dd3fc; }
+.fb-green  { background: rgba(52,211,153,0.12); border: 1px dashed rgba(52,211,153,0.45); color: #6ee7b7; }
+.fb-amber  { background: rgba(251,191,36,0.12); border: 1px dashed rgba(251,191,36,0.45); color: #fde68a; }
+.fb-red    { background: rgba(248,113,113,0.12); border: 1px dashed rgba(248,113,113,0.45); color: #fca5a5; }
+
+/* Sketch annotation */
+.annotation {
+  font-size: 13px;
+  color: #7c78a8;
+  font-style: italic;
+  text-align: center;
+  margin-top: 4px;
+}
+
+.highlight-num {
+  font-size: 32px;
+  font-weight: 700;
+  color: #7c5cfc;
+  display: block;
+  line-height: 1;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  margin: 16px 0;
+  flex-wrap: wrap;
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: #7c78a8;
+  margin-top: 2px;
+}
+</style>
+</head>
+<body>
+<div class="canvas">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="badge">🎙 Voice AI × Product Intelligence</div>
+    <div class="title">AI Voice QA <span>Specialist</span></div>
+    <div class="subtitle">Real-time product knowledge, spoken naturally</div>
+    <svg class="sketch-line" viewBox="0 0 180 8">
+      <path d="M4,5 Q30,1 60,5 Q90,9 120,4 Q150,1 176,5"
+            fill="none" stroke="#7c5cfc" stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-dasharray="300" stroke-dashoffset="300"
+            style="animation: drawLine 1.2s ease 0.4s both"/>
+    </svg>
+  </div>
+
+  <!-- PIPELINE NODES -->
+  <div class="pipeline">
+    <!-- Mic -->
+    <div class="node">
+      <div class="node-icon n-mic">🎤</div>
+      <div class="node-label">You speak</div>
+    </div>
+    <!-- Arrow 1 -->
+    <div class="arrow-wrap">
+      <svg class="arrow-svg" viewBox="0 0 38 20">
+        <line x1="2" y1="10" x2="30" y2="10" stroke="#7c5cfc" stroke-width="1.5" stroke-dasharray="5 3"
+              style="animation: arrowDash 0.5s ease 0.5s both; stroke-dashoffset:40"/>
+        <polyline points="22,5 32,10 22,15" fill="none" stroke="#7c5cfc" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <!-- LiveKit -->
+    <div class="node">
+      <div class="node-icon n-lk">⚡</div>
+      <div class="node-label">LiveKit WebRTC</div>
+    </div>
+    <!-- Arrow 2 -->
+    <div class="arrow-wrap">
+      <svg class="arrow-svg" viewBox="0 0 38 20">
+        <line x1="2" y1="10" x2="30" y2="10" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="5 3"
+              style="animation: arrowDash 0.5s ease 0.7s both; stroke-dashoffset:40"/>
+        <polyline points="22,5 32,10 22,15" fill="none" stroke="#38bdf8" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <!-- Whisper STT -->
+    <div class="node">
+      <div class="node-icon n-stt">👂</div>
+      <div class="node-label">Whisper STT</div>
+    </div>
+    <!-- Arrow 3 -->
+    <div class="arrow-wrap">
+      <svg class="arrow-svg" viewBox="0 0 38 20">
+        <line x1="2" y1="10" x2="30" y2="10" stroke="#fb923c" stroke-width="1.5" stroke-dasharray="5 3"
+              style="animation: arrowDash 0.5s ease 0.9s both; stroke-dashoffset:40"/>
+        <polyline points="22,5 32,10 22,15" fill="none" stroke="#fb923c" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <!-- GPT-4o -->
+    <div class="node">
+      <div class="node-icon n-llm">🧠</div>
+      <div class="node-label">GPT-4o-mini</div>
+    </div>
+    <!-- Arrow 4 -->
+    <div class="arrow-wrap">
+      <svg class="arrow-svg" viewBox="0 0 38 20">
+        <line x1="2" y1="10" x2="30" y2="10" stroke="#34d399" stroke-width="1.5" stroke-dasharray="5 3"
+              style="animation: arrowDash 0.5s ease 1.1s both; stroke-dashoffset:40"/>
+        <polyline points="22,5 32,10 22,15" fill="none" stroke="#34d399" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <!-- TTS -->
+    <div class="node">
+      <div class="node-icon n-tts">🔊</div>
+      <div class="node-label">OpenAI TTS</div>
+    </div>
+    <!-- Arrow 5 -->
+    <div class="arrow-wrap">
+      <svg class="arrow-svg" viewBox="0 0 38 20">
+        <line x1="2" y1="10" x2="30" y2="10" stroke="#f87171" stroke-width="1.5" stroke-dasharray="5 3"
+              style="animation: arrowDash 0.5s ease 1.3s both; stroke-dashoffset:40"/>
+        <polyline points="22,5 32,10 22,15" fill="none" stroke="#f87171" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <!-- React UI -->
+    <div class="node">
+      <div class="node-icon n-ui">✨</div>
+      <div class="node-label">React UI + Orb</div>
+    </div>
+  </div>
+
+  <div class="annotation">↑ Full-duplex real-time voice pipeline — end-to-end sub-second latency</div>
+
+  <!-- WAVE BARS -->
+  <div style="text-align:center; margin-top:18px; margin-bottom:4px;">
+    <div class="wave-label">🔴 Live voice stream</div>
+    <div class="wave-bars">
+      <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+      <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+      <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+      <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+      <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+      <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+      <div class="bar"></div><div class="bar"></div>
+    </div>
+  </div>
+
+  <!-- DIVIDER -->
+  <div class="section-divider">
+    <div class="divider-line"></div>
+    <div class="divider-text">✦ 3D Animated Orb + Live Transcript</div>
+    <div class="divider-line"></div>
+  </div>
+
+  <!-- ORB + FEATURES -->
+  <div class="orb-section">
+    <div class="orb-wrap">
+      <div class="orb-ring"></div>
+      <div class="orb-ring"></div>
+      <div class="orb-ring"></div>
+      <div class="orb-core"></div>
+    </div>
+    <div class="orb-info">
+      <div class="orb-feature">
+        <div class="feat-dot" style="background:#7c5cfc;"></div>
+        <div class="feat-text">Pulses when speaking</div>
+      </div>
+      <div class="orb-feature">
+        <div class="feat-dot" style="background:#38bdf8;"></div>
+        <div class="feat-text">Breathes when listening</div>
+      </div>
+      <div class="orb-feature">
+        <div class="feat-dot" style="background:#34d399;"></div>
+        <div class="feat-text">Emits rings on response</div>
+      </div>
+      <div class="orb-feature">
+        <div class="feat-dot" style="background:#f87171;"></div>
+        <div class="feat-text">Interruption support ← talk anytime</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIVE TRANSCRIPT -->
+  <div class="transcript-box">
+    <div class="transcript-label">
+      <div class="live-dot"></div>
+      Live transcript
+    </div>
+    <div class="transcript-line" id="transcript-out">
+      What are the pricing plans for your product?<span class="cursor"></span>
+    </div>
+  </div>
+
+  <!-- FEATURES BADGES -->
+  <div class="badges-row">
+    <div class="feat-badge fb-purple">🎤 Voice Q&A</div>
+    <div class="feat-badge fb-blue">⚡ LiveKit WebRTC</div>
+    <div class="feat-badge fb-green">🧠 GPT-4o-mini</div>
+    <div class="feat-badge fb-amber">📄 Knowledge Base</div>
+    <div class="feat-badge fb-red">🛑 Interruption Support</div>
+  </div>
+
+  <!-- DIVIDER -->
+  <div class="section-divider">
+    <div class="divider-line"></div>
+    <div class="divider-text">✦ Tech Stack</div>
+    <div class="divider-line"></div>
+  </div>
+
+  <!-- TECH STACK GRID -->
+  <div class="stack-grid">
+    <div class="stack-card">
+      <div class="sc-icon">⚡</div>
+      <div class="sc-name">LiveKit</div>
+      <div class="sc-role">Docker + WebRTC</div>
+    </div>
+    <div class="stack-card">
+      <div class="sc-icon">👂</div>
+      <div class="sc-name">Whisper</div>
+      <div class="sc-role">Speech-to-Text</div>
+    </div>
+    <div class="stack-card">
+      <div class="sc-icon">🧠</div>
+      <div class="sc-name">GPT-4o-mini</div>
+      <div class="sc-role">LLM Reasoning</div>
+    </div>
+    <div class="stack-card">
+      <div class="sc-icon">🔊</div>
+      <div class="sc-name">OpenAI TTS</div>
+      <div class="sc-role">Text-to-Speech</div>
+    </div>
+    <div class="stack-card">
+      <div class="sc-icon">🌊</div>
+      <div class="sc-name">Silero VAD</div>
+      <div class="sc-role">Voice Activity</div>
+    </div>
+    <div class="stack-card">
+      <div class="sc-icon">⚛️</div>
+      <div class="sc-name">React 19</div>
+      <div class="sc-role">Framer Motion UI</div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stat-row">
+    <div class="stat-item">
+      <span class="highlight-num">~1s</span>
+      <div class="stat-label">Response latency</div>
+    </div>
+    <div class="stat-item">
+      <span class="highlight-num">3</span>
+      <div class="stat-label">AI services wired</div>
+    </div>
+    <div class="stat-item">
+      <span class="highlight-num">∞</span>
+      <div class="stat-label">Custom knowledge</div>
+    </div>
+    <div class="stat-item">
+      <span class="highlight-num">100%</span>
+      <div class="stat-label">Open source</div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-text">Built by <span class="footer-name">@vigneshn-codes</span></div>
+    <div style="font-size:13px;color:#605e80;margin-top:4px;">
+      github.com/vigneshn-codes/W7-Livekit-Voice-to-productQA-Specialist
+    </div>
+    <div class="tag-row">
+      <span class="tag">#VoiceAI</span>
+      <span class="tag">#LiveKit</span>
+      <span class="tag">#OpenAI</span>
+      <span class="tag">#React</span>
+      <span class="tag">#BuildInPublic</span>
+      <span class="tag">#AIAgent</span>
+    </span>
+  </div>
+
+</div>
+
+<script>
+// ── Transcript ticker ──
+const lines = [
+  "What are the pricing plans for your product?",
+  "Do you offer a free trial?",
+  "What integrations do you support?",
+  "How do I get started with the API?",
+  "Is there enterprise support available?",
+];
+let idx = 0;
+const el = document.getElementById('transcript-out');
+
+function typeWriter(text, callback) {
+  el.innerHTML = '';
+  const cursor = '<span class="cursor"></span>';
+  let i = 0;
+  const timer = setInterval(() => {
+    if (i < text.length) {
+      el.innerHTML = text.slice(0, ++i) + cursor;
+    } else {
+      clearInterval(timer);
+      setTimeout(callback, 1800);
+    }
+  }, 42);
+}
+
+function nextLine() {
+  idx = (idx + 1) % lines.length;
+  typeWriter(lines[idx], nextLine);
+}
+
+setTimeout(() => typeWriter(lines[0], nextLine), 1200);
+</script>
+</body>
+</html>
